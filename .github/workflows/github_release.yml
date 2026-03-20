@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -14,12 +15,13 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Use Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22.x'
+          registry-url: 'https://npm.pkg.github.com'
           cache: 'yarn'
           cache-dependency-path: yarn.lock
 
@@ -28,6 +30,11 @@ jobs:
 
       - name: Build package
         run: yarn build
+
+      - name: Publish package
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pack npm artifact
         run: npm pack
