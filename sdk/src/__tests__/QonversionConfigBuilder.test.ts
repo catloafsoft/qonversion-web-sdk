@@ -174,6 +174,21 @@ test('normalizes custom api url by removing trailing slash', () => {
   expect(result.networkConfig.apiUrl).toBe('https://proxy.example.com');
 });
 
+test('normalizes custom api url by removing query and hash', () => {
+  // given
+  const projectKey = "test key";
+  const apiUrl = 'https://proxy.example.com/base-path/?foo=bar#section';
+
+  const builder = new QonversionConfigBuilder(projectKey);
+  builder.setApiUrl(apiUrl);
+
+  // when
+  const result = builder.build()
+
+  // then
+  expect(result.networkConfig.apiUrl).toBe('https://proxy.example.com/base-path');
+});
+
 test('building with blank project key', () => {
   // given
   const builder = new QonversionConfigBuilder("");
@@ -183,7 +198,7 @@ test('building with blank project key', () => {
   expectQonversionError(QonversionErrorCode.ConfigPreparation, testingMethod);
 });
 
-test('building with blank api url throws', () => {
+test('setting blank api url throws', () => {
   // given
   const builder = new QonversionConfigBuilder("test");
   const testingMethod = () => builder.setApiUrl("");
@@ -192,7 +207,7 @@ test('building with blank api url throws', () => {
   expectQonversionError(QonversionErrorCode.ConfigPreparation, testingMethod);
 });
 
-test('building with invalid api url throws', () => {
+test('setting invalid api url throws', () => {
   // given
   const builder = new QonversionConfigBuilder("test");
   const testingMethod = () => builder.setApiUrl("not a url");
@@ -201,10 +216,19 @@ test('building with invalid api url throws', () => {
   expectQonversionError(QonversionErrorCode.ConfigPreparation, testingMethod);
 });
 
-test('building with non-https api url throws', () => {
+test('setting non-https api url throws', () => {
   // given
   const builder = new QonversionConfigBuilder("test");
   const testingMethod = () => builder.setApiUrl("http://proxy.example.com");
+
+  // when and then
+  expectQonversionError(QonversionErrorCode.ConfigPreparation, testingMethod);
+});
+
+test('setting api url with credentials throws', () => {
+  // given
+  const builder = new QonversionConfigBuilder("test");
+  const testingMethod = () => builder.setApiUrl("https://user:pass@proxy.example.com");
 
   // when and then
   expectQonversionError(QonversionErrorCode.ConfigPreparation, testingMethod);

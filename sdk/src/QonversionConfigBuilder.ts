@@ -82,17 +82,22 @@ export class QonversionConfigBuilder {
     let normalizedUrl: URL;
     try {
       normalizedUrl = new URL(apiUrl);
-    } catch {
-      throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL is invalid");
+    } catch (error) {
+      throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL is invalid", error as Error);
     }
 
     if (normalizedUrl.protocol !== 'https:') {
       throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL must use HTTPS");
     }
 
-normalizedUrl.search = '';
-normalizedUrl.hash = '';
-this.apiUrl = normalizedUrl.toString().replace(/\/$/, '');
+    if (normalizedUrl.username || normalizedUrl.password) {
+      throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL must not contain credentials");
+    }
+
+    // Keep only the origin and path because this value acts as the request base URL.
+    normalizedUrl.search = '';
+    normalizedUrl.hash = '';
+    this.apiUrl = normalizedUrl.toString().replace(/\/$/, '');
 
     return this;
   };
