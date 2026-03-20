@@ -20,6 +20,7 @@ export class QonversionConfigBuilder {
   private environment = Environment.Production;
   private logLevel = LogLevel.Info;
   private logTag = DEFAULT_LOG_TAG;
+  private apiUrl = API_URL;
 
   /**
    * Creates an instance of a builder
@@ -66,6 +67,35 @@ export class QonversionConfigBuilder {
   };
 
   /**
+   * Define the base API URL that the SDK will use for all network requests.
+   *
+   * This is primarily useful when routing the SDK through a trusted HTTPS proxy.
+   *
+   * @param apiUrl the desired HTTPS base API URL.
+   * @return builder instance for chain calls.
+   */
+  setApiUrl(apiUrl: string): QonversionConfigBuilder {
+    if (!apiUrl) {
+      throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL is empty");
+    }
+
+    let normalizedUrl: URL;
+    try {
+      normalizedUrl = new URL(apiUrl);
+    } catch {
+      throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL is invalid");
+    }
+
+    if (normalizedUrl.protocol !== 'https:') {
+      throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL must use HTTPS");
+    }
+
+    this.apiUrl = normalizedUrl.toString().replace(/\/$/, '');
+
+    return this;
+  };
+
+  /**
    * Generate {@link QonversionConfig} instance with all the provided configurations.
    *
    * @throws a {@link QonversionError} if unacceptable configuration was provided.
@@ -89,7 +119,7 @@ export class QonversionConfigBuilder {
 
     const networkConfig: NetworkConfig = {
       canSendRequests: true,
-      apiUrl: API_URL,
+      apiUrl: this.apiUrl,
     };
 
     return {
