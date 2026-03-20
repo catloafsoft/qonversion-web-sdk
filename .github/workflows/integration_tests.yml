@@ -27,11 +27,15 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '22.x'
-          cache: 'yarn'
-          cache-dependency-path: yarn.lock
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Install Dependencies
-        run: yarn
+        run: pnpm install --frozen-lockfile
 
       - name: Tests
         run: |
-          yarn integrationTests
+          pnpm integrationTests
