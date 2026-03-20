@@ -2,7 +2,7 @@
     Qonversion
 </h1>
 
-Qonversion - In-app subscription monetization: implement subscriptions and grow your app’s revenue with A/B experiments 
+Qonversion - In-app subscription monetization: implement subscriptions and grow your app’s revenue with A/B experiments
 
 * In-app subscription management SDK
 * API and webhooks to make your subscription data available where you need it
@@ -16,9 +16,8 @@ Qonversion - In-app subscription monetization: implement subscriptions and grow 
      </a>
 </p>
 
-[![Release](https://img.shields.io/github/release/qonversion/web-sdk.svg?style=flat)](https://github.com/qonversion/web-sdk/releases)
+[![Release](https://img.shields.io/github/release/catloafsoft/qonversion-web-sdk.svg?style=flat)](https://github.com/catloafsoft/qonversion-web-sdk/releases)
 [![MIT License](http://img.shields.io/cocoapods/l/Qonversion.svg?style=flat)](https://qonversion.io)
-
 
 ## In-App Subscription Implementation & Management
 
@@ -28,9 +27,9 @@ Qonversion - In-app subscription monetization: implement subscriptions and grow 
 </p>
 
 1. Qonversion SDK provides three simple methods to manage subscriptions:
-	* Get in-app product details
-	* Make purchases
-	* Check subscription status to manage premium access
+ * Get in-app product details
+ * Make purchases
+ * Check subscription status to manage premium access
 2. Qonversion communicates with Apple or Google platforms both through SDK and server-side to process native in-app payments and keep subscription statuses up to date.
 3. You can use Qonversion webhooks and API in addition to SDK to get user-level data where you need it.
 
@@ -44,7 +43,6 @@ Qonversion provides advanced subscription analytics out-of-the-box. You can moni
      <a href="https://documentation.qonversion.io/docs/analytics"><img width="90%" src="https://files.readme.io/9a4fdf6-Analytics.png">
      </a>
 </p>
-
 
 ## Integrations
 
@@ -82,6 +80,10 @@ Convinced? Let's go!
 
 Check the [full documentation](https://documentation.qonversion.io/docs/quickstart) to learn about implementation details and available features.
 
+## Releases And Packages
+
+Release and package publishing instructions live in [docs/releases.md](docs/releases.md).
+
 #### Help us improve the documentation
 
 Whether you’re a core user or trying it out for the first time, you can make a valuable contribution to Qonversion by improving the documentation. Help us by:
@@ -100,10 +102,9 @@ Contributions are what make the open source community such an amazing place to l
 4. Push to the Branch (`git push origin feature/SuperFeature`)
 5. Open a Pull Request
 
-
 ## Have a question?
 
-Contact us via [issues on GitHub](https://github.com/qonversion/web-sdk/issues) or [ask a question](https://documentation.qonversion.io/discuss-new) on the site.
+Contact us via [issues on GitHub](https://github.com/catloafsoft/qonversion-web-sdk/issues) or [ask a question](https://documentation.qonversion.io/discuss-new) on the site.
 
 ## License
 

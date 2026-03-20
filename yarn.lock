@@ -1398,6 +1398,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@catloafsoft/qonversion-web-sdk@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@catloafsoft/qonversion-web-sdk@workspace:."
+  dependencies:
+    "@babel/core": "npm:^7.29.0"
+    "@babel/preset-env": "npm:^7.29.2"
+    "@babel/preset-typescript": "npm:^7.28.5"
+    "@types/jest": "npm:^30.0.0"
+    "@types/uuid": "npm:^11.0.0"
+    "@typescript-eslint/eslint-plugin": "npm:^5.62.0"
+    "@typescript-eslint/parser": "npm:^5.62.0"
+    babel-jest: "npm:^30.3.0"
+    dotenv: "npm:^17.3.1"
+    eslint: "npm:^8.57.1"
+    eslint-config-prettier: "npm:^8.10.2"
+    jest: "npm:^30.3.0"
+    ts-jest: "npm:^29.4.6"
+    typescript: "npm:^5.9.3"
+    uuid: "npm:^11.1.0"
+  languageName: unknown
+  linkType: soft
+
 "@emnapi/core@npm:^1.4.3":
   version: 1.9.1
   resolution: "@emnapi/core@npm:1.9.1"
@@ -1955,28 +1977,6 @@ __metadata:
   checksum: 10c0/ac8e4e8138b1a7a4ac6282873aef7389c352f1f8b577b4850778f5182e4a39a5241facbe48361fec817f56d02b51691b383010843fb08b34a8e8ea3614688fd5
   languageName: node
   linkType: hard
-
-"@qonversion/web-sdk@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "@qonversion/web-sdk@workspace:."
-  dependencies:
-    "@babel/core": "npm:^7.29.0"
-    "@babel/preset-env": "npm:^7.29.2"
-    "@babel/preset-typescript": "npm:^7.28.5"
-    "@types/jest": "npm:^30.0.0"
-    "@types/uuid": "npm:^11.0.0"
-    "@typescript-eslint/eslint-plugin": "npm:^5.62.0"
-    "@typescript-eslint/parser": "npm:^5.62.0"
-    babel-jest: "npm:^30.3.0"
-    dotenv: "npm:^17.3.1"
-    eslint: "npm:^8.57.1"
-    eslint-config-prettier: "npm:^8.10.2"
-    jest: "npm:^30.3.0"
-    ts-jest: "npm:^29.4.6"
-    typescript: "npm:^5.9.3"
-    uuid: "npm:^11.1.0"
-  languageName: unknown
-  linkType: soft
 
 "@sinclair/typebox@npm:^0.34.0":
   version: 0.34.48

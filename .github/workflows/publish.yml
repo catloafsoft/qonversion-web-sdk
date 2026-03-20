@@ -1,8 +1,7 @@
-name: Publish
+name: Publish to npmjs manually
 
 on:
-  release:
-    types: [released]
+  workflow_dispatch:
 
 jobs:
   publish:

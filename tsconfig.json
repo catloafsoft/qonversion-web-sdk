@@ -13,7 +13,7 @@
     "sdk/src/**/*"
   ],
   "exclude": [
-    "sdk/src/__tests__/*",
-    "sdk/src/__integrationTests__/*"
+    "sdk/src/__tests__/**/*",
+    "sdk/src/__integrationTests__/**/*"
   ]
 }
