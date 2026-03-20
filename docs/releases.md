@@ -27,7 +27,7 @@ Add an `.npmrc` entry so the `@catloafsoft` scope resolves to GitHub Packages:
 Then install the package:
 
 ```bash
-npm install @catloafsoft/qonversion-web-sdk
+pnpm add @catloafsoft/qonversion-web-sdk
 ```
 
 GitHub Packages npm installs currently require authentication, so use a token with package read access in the consuming repository or environment.
