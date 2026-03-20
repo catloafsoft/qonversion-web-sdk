@@ -14,7 +14,7 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set Aegis url
         run: |
           fastlane setAegisUrl url:${{ secrets.AEGIS_URL }}
@@ -24,7 +24,7 @@ jobs:
           fastlane updateStripeSecrets product_id:${{ vars.STRIPE_PRODUCT_ID }} subscription_id:${{ vars.STRIPE_SUBSCRIPTION_ID }}
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22.x'
           cache: 'yarn'
