@@ -90,7 +90,9 @@ export class QonversionConfigBuilder {
       throw new QonversionError(QonversionErrorCode.ConfigPreparation, "API URL must use HTTPS");
     }
 
-    this.apiUrl = normalizedUrl.toString().replace(/\/$/, '');
+normalizedUrl.search = '';
+normalizedUrl.hash = '';
+this.apiUrl = normalizedUrl.toString().replace(/\/$/, '');
 
     return this;
   };
