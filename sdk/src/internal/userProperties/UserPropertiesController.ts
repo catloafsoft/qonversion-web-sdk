@@ -68,9 +68,28 @@ export class UserPropertiesControllerImpl implements UserPropertiesController, U
     return new UserProperties(mappedProperties);
   }
 
-  onUserChanged(): void {
+  onUserChanged(newUserOriginalId: string, oldUserOriginalId?: string): void {
+    const pendingProperties = {...this.pendingUserPropertiesStorage.getProperties()};
+
+    this.delayedWorker.cancel();
     this.pendingUserPropertiesStorage.clear();
     this.sentUserPropertiesStorage.clear();
+
+    // Properties set right before the user switch belong to the previous user —
+    // flush them on their behalf instead of dropping them silently. The storage
+    // already holds the new user id, so the old id is passed explicitly.
+    if (oldUserOriginalId && Object.keys(pendingProperties).length > 0) {
+      this.logger.verbose(
+        'Flushing pending user properties for the previous user before switching',
+        {oldUserOriginalId, pendingProperties},
+      );
+      this.userPropertiesService.sendProperties(oldUserOriginalId, pendingProperties)
+        .catch(e => {
+          if (e instanceof QonversionError) {
+            this.logger.error('Failed to send pending user properties for the previous user', e);
+          }
+        });
+    }
   }
 
   private sendUserPropertiesIfNeeded(ignoreExistingJob: boolean = false) {

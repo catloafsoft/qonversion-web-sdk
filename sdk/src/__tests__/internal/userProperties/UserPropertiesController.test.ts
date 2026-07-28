@@ -312,17 +312,59 @@ describe('sendUserProperties tests', () => {
 });
 
 describe('onUserChanged tests', () => {
-  test('user changed handling', () => {
-    // given
+  beforeEach(() => {
     pendingUserPropertiesStorage.clear = jest.fn();
     sentUserPropertiesStorage.clear = jest.fn();
+    delayedWorker.cancel = jest.fn();
+  });
+
+  test('user changed handling without pending properties', () => {
+    // given
+    pendingUserPropertiesStorage.getProperties = jest.fn(() => ({}));
+    userPropertiesService.sendProperties = jest.fn();
 
     // when
-    userPropertiesController.onUserChanged();
+    userPropertiesController.onUserChanged('new_user_id', 'old_user_id');
+
+    // then
+    expect(delayedWorker.cancel).toBeCalled();
+    expect(pendingUserPropertiesStorage.clear).toBeCalled();
+    expect(sentUserPropertiesStorage.clear).toBeCalled();
+    expect(userPropertiesService.sendProperties).not.toBeCalled();
+  });
+
+  test('pending properties are flushed for the previous user', () => {
+    // given
+    const pendingProperties = {test_key: 'test value'};
+    const sendResponse: UserPropertiesSendResponse = {
+      savedProperties: [{key: 'test_key', value: 'test value'}],
+      propertyErrors: [],
+    };
+    pendingUserPropertiesStorage.getProperties = jest.fn(() => pendingProperties);
+    userPropertiesService.sendProperties = jest.fn(async () => sendResponse);
+
+    // when
+    userPropertiesController.onUserChanged('new_user_id', 'old_user_id');
+
+    // then
+    expect(delayedWorker.cancel).toBeCalled();
+    expect(pendingUserPropertiesStorage.clear).toBeCalled();
+    expect(sentUserPropertiesStorage.clear).toBeCalled();
+    expect(userPropertiesService.sendProperties).toBeCalledWith('old_user_id', pendingProperties);
+  });
+
+  test('pending properties are not flushed when the old user id is unknown', () => {
+    // given
+    pendingUserPropertiesStorage.getProperties = jest.fn(() => ({test_key: 'test value'}));
+    userPropertiesService.sendProperties = jest.fn();
+
+    // when
+    userPropertiesController.onUserChanged('new_user_id');
 
     // then
     expect(pendingUserPropertiesStorage.clear).toBeCalled();
     expect(sentUserPropertiesStorage.clear).toBeCalled();
+    expect(userPropertiesService.sendProperties).not.toBeCalled();
   });
 });
 
