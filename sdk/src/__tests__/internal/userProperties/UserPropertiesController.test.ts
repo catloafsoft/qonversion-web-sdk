@@ -381,8 +381,9 @@ describe('onUserChanged tests', () => {
   });
 
   test('failed flush for the previous user is logged', async () => {
-    // given
-    const expError = new QonversionError(QonversionErrorCode.BackendError);
+    // given - a plain (non-Qonversion) error pins the UNCONDITIONAL logging:
+    // the storages are already cleared, so the log is the last trace
+    const expError = new Error('network down');
     pendingUserPropertiesStorage.getProperties = jest.fn(() => ({test_key: 'test value'}));
     userPropertiesService.sendProperties = jest.fn(async () => {throw expError});
     logger.error = jest.fn();
