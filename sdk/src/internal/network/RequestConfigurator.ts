@@ -1,5 +1,6 @@
 import {
   ApiEndpoint,
+  ApiHeader,
   HeaderBuilder,
   NetworkRequest,
   RequestBody,
@@ -46,7 +47,10 @@ export class RequestConfiguratorImpl implements RequestConfigurator {
 
   configureUserPropertiesSendRequest(userId: string, properties: UserPropertyData[]): NetworkRequest {
     const url = `${this.baseUrl}/${ApiEndpoint.Users}/${userId}/${ApiEndpoint.Properties}`;
-    return this.configureRequest(url, RequestType.POST, properties);
+    // The common User-Id header reflects the CURRENT user, which may differ
+    // from the addressed one when pending properties are flushed for the
+    // previous user on a user change — keep the header consistent with the URL.
+    return this.configureRequest(url, RequestType.POST, properties, {[ApiHeader.UserID]: userId});
   }
 
   configureUserPropertiesGetRequest(userId: string): NetworkRequest {

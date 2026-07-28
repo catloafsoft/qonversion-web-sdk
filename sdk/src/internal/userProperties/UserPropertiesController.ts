@@ -17,6 +17,11 @@ export class UserPropertiesControllerImpl implements UserPropertiesController, U
   private readonly logger: Logger;
   private readonly sendingDelayMs: number;
 
+  // Incremented on every user change. A send that was in flight across a user
+  // change must not write its result into the storages — they belong to the
+  // new user by then.
+  private userChangeEpoch: number = 0;
+
   constructor(
     pendingUserPropertiesStorage: UserPropertiesStorage,
     sentUserPropertiesStorage: UserPropertiesStorage,
@@ -68,9 +73,29 @@ export class UserPropertiesControllerImpl implements UserPropertiesController, U
     return new UserProperties(mappedProperties);
   }
 
-  onUserChanged(): void {
+  onUserChanged(newUserOriginalId: string, oldUserOriginalId?: string): void {
+    const pendingProperties = {...this.pendingUserPropertiesStorage.getProperties()};
+
+    this.userChangeEpoch++;
+    this.delayedWorker.cancel();
     this.pendingUserPropertiesStorage.clear();
     this.sentUserPropertiesStorage.clear();
+
+    // Properties set right before the user switch belong to the previous user —
+    // flush them on their behalf instead of dropping them silently. The storage
+    // already holds the new user id, so the old id is passed explicitly.
+    if (oldUserOriginalId && Object.keys(pendingProperties).length > 0) {
+      this.logger.verbose(
+        'Flushing pending user properties for the previous user before switching',
+        {oldUserOriginalId, pendingProperties},
+      );
+      this.userPropertiesService.sendProperties(oldUserOriginalId, pendingProperties)
+        .catch(e => {
+          // Best effort: the storages are already cleared, so a failed flush is
+          // the last trace of these properties — always leave a log line.
+          this.logger.error('Failed to send pending user properties for the previous user', e);
+        });
+    }
   }
 
   private sendUserPropertiesIfNeeded(ignoreExistingJob: boolean = false) {
@@ -95,10 +120,19 @@ export class UserPropertiesControllerImpl implements UserPropertiesController, U
       this.logger.verbose('Sending user properties', propertiesToSend);
 
       const userId = this.userDataStorage.requireOriginalUserId();
+      const epochAtSendStart = this.userChangeEpoch;
       const response = await this.userPropertiesService.sendProperties(
         userId,
         propertiesToSend,
       );
+
+      if (epochAtSendStart !== this.userChangeEpoch) {
+        // The user changed while the request was in flight — the storages now
+        // belong to the new user, and writing this response into them would
+        // poison the new user's pending/sent state.
+        this.logger.verbose('User changed during properties send, skipping the result', {userId});
+        return;
+      }
 
       const processedProperties: Record<string, string> = {};
       response.savedProperties.forEach(savedProperty => {

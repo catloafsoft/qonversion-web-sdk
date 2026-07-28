@@ -1,5 +1,6 @@
 import {
   ApiEndpoint,
+  ApiHeader,
   HeaderBuilder,
   NetworkRequest,
   RequestConfiguratorImpl,
@@ -81,7 +82,9 @@ describe('RequestConfigurator tests', () => {
     // given
     const properties = [{key: 'a', value: 'a'}, {key: 'b', value: 'b'}];
     const expResult: NetworkRequest = {
-      headers: testHeaders,
+      // The User-Id header must match the addressed user, not the ambient one —
+      // the send may target the previous user during a user-change flush.
+      headers: {...testHeaders, [ApiHeader.UserID]: testUserId},
       type: RequestType.POST,
       url: testBaseUrl + '/' + ApiEndpoint.Users + '/' + testUserId + '/' + ApiEndpoint.Properties,
       body: properties,
