@@ -334,13 +334,15 @@ describe('onUserChanged tests', () => {
   });
 
   test('pending properties are flushed for the previous user', () => {
-    // given
-    const pendingProperties = {test_key: 'test value'};
+    // given - stateful storage mock: clear() actually empties it, so this test
+    // pins the snapshot-before-clear ordering, not just the send call
+    let stored: Record<string, string> = {test_key: 'test value'};
     const sendResponse: UserPropertiesSendResponse = {
       savedProperties: [{key: 'test_key', value: 'test value'}],
       propertyErrors: [],
     };
-    pendingUserPropertiesStorage.getProperties = jest.fn(() => pendingProperties);
+    pendingUserPropertiesStorage.getProperties = jest.fn(() => stored);
+    pendingUserPropertiesStorage.clear = jest.fn(() => {stored = {}});
     userPropertiesService.sendProperties = jest.fn(async () => sendResponse);
 
     // when
@@ -350,7 +352,23 @@ describe('onUserChanged tests', () => {
     expect(delayedWorker.cancel).toBeCalled();
     expect(pendingUserPropertiesStorage.clear).toBeCalled();
     expect(sentUserPropertiesStorage.clear).toBeCalled();
-    expect(userPropertiesService.sendProperties).toBeCalledWith('old_user_id', pendingProperties);
+    expect(userPropertiesService.sendProperties).toBeCalledWith('old_user_id', {test_key: 'test value'});
+  });
+
+  test('failed flush for the previous user is logged', async () => {
+    // given
+    const expError = new QonversionError(QonversionErrorCode.BackendError);
+    pendingUserPropertiesStorage.getProperties = jest.fn(() => ({test_key: 'test value'}));
+    userPropertiesService.sendProperties = jest.fn(async () => {throw expError});
+    logger.error = jest.fn();
+
+    // when
+    userPropertiesController.onUserChanged('new_user_id', 'old_user_id');
+    await new Promise(process.nextTick); // flush microtasks for the fire-and-forget catch
+
+    // then
+    expect(userPropertiesService.sendProperties).toBeCalledWith('old_user_id', {test_key: 'test value'});
+    expect(logger.error).toBeCalledWith('Failed to send pending user properties for the previous user', expError);
   });
 
   test('pending properties are not flushed when the old user id is unknown', () => {
@@ -362,6 +380,7 @@ describe('onUserChanged tests', () => {
     userPropertiesController.onUserChanged('new_user_id');
 
     // then
+    expect(delayedWorker.cancel).toBeCalled();
     expect(pendingUserPropertiesStorage.clear).toBeCalled();
     expect(sentUserPropertiesStorage.clear).toBeCalled();
     expect(userPropertiesService.sendProperties).not.toBeCalled();
