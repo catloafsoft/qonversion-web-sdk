@@ -233,6 +233,31 @@ describe('sendUserProperties tests', () => {
     expect(logger.error).not.toBeCalled();
   });
 
+  test('send completing after a user change does not write into the storages', async () => {
+    // given - a send is in flight when the user changes
+    const properties = {a: 'aa'};
+    pendingUserPropertiesStorage.getProperties = jest.fn(() => properties);
+    pendingUserPropertiesStorage.clear = jest.fn();
+    sentUserPropertiesStorage.clear = jest.fn();
+    delayedWorker.cancel = jest.fn();
+
+    let resolveSend: (response: UserPropertiesSendResponse) => void;
+    userPropertiesService.sendProperties = jest.fn(() =>
+      new Promise<UserPropertiesSendResponse>(resolve => {resolveSend = resolve})
+    );
+
+    // when - the user changes mid-flight, then the old send resolves
+    const sendPromise = userPropertiesController['sendUserProperties']();
+    userPropertiesController.onUserChanged('new_user_id');
+    resolveSend!({propertyErrors: [], savedProperties: [{key: 'a', value: 'aa'}]});
+    await sendPromise;
+
+    // then - the stale response is dropped: no storage writes, no re-trigger
+    expect(pendingUserPropertiesStorage.delete).not.toBeCalled();
+    expect(sentUserPropertiesStorage.add).not.toBeCalled();
+    expect(userPropertiesController['sendUserPropertiesIfNeeded']).not.toBeCalled();
+  });
+
   test('send empty properties', async () => {
     // given
     const properties = {};
@@ -369,6 +394,26 @@ describe('onUserChanged tests', () => {
     // then
     expect(userPropertiesService.sendProperties).toBeCalledWith('old_user_id', {test_key: 'test value'});
     expect(logger.error).toBeCalledWith('Failed to send pending user properties for the previous user', expError);
+  });
+
+  test('flush result is not written into the storages', async () => {
+    // given
+    pendingUserPropertiesStorage.getProperties = jest.fn(() => ({test_key: 'test value'}));
+    pendingUserPropertiesStorage.delete = jest.fn();
+    sentUserPropertiesStorage.add = jest.fn();
+    userPropertiesService.sendProperties = jest.fn(async () => ({
+      savedProperties: [{key: 'test_key', value: 'test value'}],
+      propertyErrors: [],
+    }));
+
+    // when
+    userPropertiesController.onUserChanged('new_user_id', 'old_user_id');
+    await new Promise(process.nextTick); // let the fire-and-forget flush resolve
+
+    // then - the flush belongs to the previous user; its response must not
+    // pollute the new user's pending/sent state
+    expect(pendingUserPropertiesStorage.delete).not.toBeCalled();
+    expect(sentUserPropertiesStorage.add).not.toBeCalled();
   });
 
   test('pending properties are not flushed when the old user id is unknown', () => {
