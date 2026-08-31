@@ -29,7 +29,7 @@ describe('execute test', () => {
   };
 
   // @ts-ignore
-  const mockFetch = jest.fn(() =>
+  const mockFetch = jest.fn((_url?: RequestInfo | URL, _init?: RequestInit) =>
     Promise.resolve({
       status: testCode,
       headers: {
@@ -57,6 +57,10 @@ describe('execute test', () => {
     mockFetch.mockClear();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('usual execute', async () => {
     // given
     const request: NetworkRequest = {
@@ -70,6 +74,7 @@ describe('execute test', () => {
       method: request.type,
       headers: expHeaders,
       body: JSON.stringify(testBody),
+      signal: expect.any(AbortSignal),
     };
 
     // when
@@ -91,6 +96,7 @@ describe('execute test', () => {
     const expRequest: RequestInit = {
       method: request.type,
       headers: expHeaders,
+      signal: expect.any(AbortSignal),
     };
 
     // when
@@ -207,5 +213,35 @@ describe('execute test', () => {
       code: 204,
       payload: undefined,
     });
+  });
+
+  test('aborts a network request after 15 seconds', async () => {
+    // given
+    jest.useFakeTimers();
+    mockFetch.mockImplementationOnce((_url, init) =>
+      new Promise((_resolve, reject) => {
+        const signal = init?.signal;
+        if (!(signal instanceof AbortSignal)) {
+          reject(new Error('Expected an abort signal'));
+          return;
+        }
+        signal.addEventListener('abort', () => {
+          reject(new DOMException('The operation was aborted.', 'AbortError'));
+        }, {once: true});
+      })
+    );
+    const request: NetworkRequest = {
+      headers: testHeaders,
+      type: RequestType.GET,
+      url: testUrl
+    };
+
+    // when
+    const execution = networkClient.execute(request);
+    const timeoutRejection = expect(execution).rejects.toMatchObject({name: 'AbortError'});
+    await jest.advanceTimersByTimeAsync(15_000);
+
+    // then
+    await timeoutRejection;
   });
 });

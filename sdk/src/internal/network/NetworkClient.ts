@@ -2,6 +2,8 @@ import {ApiHeader, NetworkClient, NetworkRequest, RawNetworkResponse} from './ty
 import {QonversionError} from '../../exception/QonversionError';
 import {QonversionErrorCode} from '../../exception/QonversionErrorCode';
 
+const NETWORK_REQUEST_TIMEOUT_MS = 15_000;
+
 export class NetworkClientImpl implements NetworkClient {
   async execute(request: NetworkRequest): Promise<RawNetworkResponse> {
     const headers: HeadersInit = {
@@ -10,16 +12,23 @@ export class NetworkClientImpl implements NetworkClient {
       [ApiHeader.Accept]: 'application/json',
     };
     const body: BodyInit | undefined = request.body ? JSON.stringify(request.body) : undefined;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), NETWORK_REQUEST_TIMEOUT_MS);
     const requestInit: RequestInit = {
       method: request.type,
       headers,
       body,
+      signal: controller.signal,
     };
 
-    const response = await fetch(request.url, requestInit);
-    const code = response.status;
-    const data = await this.parseResponseBody(response, code);
-    return {code, payload: data};
+    try {
+      const response = await fetch(request.url, requestInit);
+      const code = response.status;
+      const data = await this.parseResponseBody(response, code);
+      return {code, payload: data};
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   private async parseResponseBody(response: Response, code: number): Promise<unknown> {
