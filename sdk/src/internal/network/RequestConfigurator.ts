@@ -1,5 +1,6 @@
 import {
   ApiEndpoint,
+  ApiHeader,
   HeaderBuilder,
   NetworkRequest,
   RequestBody,
@@ -9,7 +10,7 @@ import {
 } from './types';
 import {PrimaryConfigProvider} from '../types';
 import {UserDataProvider} from '../user';
-import {PurchaseCoreData, StripeStoreData} from '../../dto/Purchase';
+import {PaddleStoreData, PurchaseCoreData, StripeStoreData} from '../../dto/Purchase';
 import {Environment} from '../../dto/Environment';
 import {UserPropertyData} from '../userProperties';
 
@@ -46,7 +47,10 @@ export class RequestConfiguratorImpl implements RequestConfigurator {
 
   configureUserPropertiesSendRequest(userId: string, properties: UserPropertyData[]): NetworkRequest {
     const url = this.buildUrl(ApiEndpoint.Users, userId, ApiEndpoint.Properties);
-    return this.configureRequest(url, RequestType.POST, properties);
+    // The common User-Id header reflects the CURRENT user, which may differ
+    // from the addressed one when pending properties are flushed for the
+    // previous user on a user change — keep the header consistent with the URL.
+    return this.configureRequest(url, RequestType.POST, properties, {[ApiHeader.UserID]: userId});
   }
 
   configureUserPropertiesGetRequest(userId: string): NetworkRequest {
@@ -88,6 +92,28 @@ export class RequestConfiguratorImpl implements RequestConfigurator {
     return this.configureRequest(url, RequestType.POST, body);
   }
 
+  configurePaddlePurchaseRequest(userId: string, data: PurchaseCoreData & PaddleStoreData): NetworkRequest {
+    const url = this.buildUrl(ApiEndpoint.Users, userId, 'purchases');
+    const paddleStoreData: RequestBody = {
+      transaction_id: data.transactionId,
+      product_id: data.productId,
+      type: paddleSdkTypeToWire(data.type),
+    };
+    // Paddle one-time purchases have no subscription id; omit the field
+    // entirely instead of sending an empty string.
+    if (data.subscriptionId !== undefined) {
+      paddleStoreData.subscription_id = data.subscriptionId;
+    }
+    const body = {
+      price: data.price,
+      currency: data.currency,
+      paddle_store_data: paddleStoreData,
+      purchased: data.purchased,
+    };
+
+    return this.configureRequest(url, RequestType.POST, body);
+  }
+
   private configureRequest(
     url: string,
     type: RequestType,
@@ -113,5 +139,23 @@ export class RequestConfiguratorImpl implements RequestConfigurator {
       .join('/');
 
     return encodedPath ? `${this.baseUrl}/${basePath}/${encodedPath}` : `${this.baseUrl}/${basePath}`;
+  }
+}
+
+// Wire format uses "non_recurring" for one-time purchases (consistent with
+// the server-side UserPurchaseProductType enum shared by every store). The
+// SDK exposes the more Paddle-native "inapp". An explicit switch + exhaustive
+// `never` default means any new PaddlePurchaseType variant fails the type
+// checker here instead of silently aliasing to "subscription" at runtime.
+function paddleSdkTypeToWire(t: PaddleStoreData['type']): 'subscription' | 'non_recurring' {
+  switch (t) {
+    case 'subscription':
+      return 'subscription';
+    case 'inapp':
+      return 'non_recurring';
+    default: {
+      const _exhaustive: never = t;
+      throw new Error(`unhandled PaddlePurchaseType: ${String(_exhaustive)}`);
+    }
   }
 }

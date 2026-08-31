@@ -1,5 +1,6 @@
 import {
   ApiEndpoint,
+  ApiHeader,
   HeaderBuilder,
   NetworkRequest,
   RequestConfiguratorImpl,
@@ -9,7 +10,7 @@ import {
 import {PrimaryConfig} from '../../../types';
 import {PrimaryConfigProvider} from '../../../internal';
 import {UserDataProvider} from '../../../internal/user';
-import {PurchaseCoreData, StripeStoreData, Environment} from '../../../index';
+import {PaddleStoreData, PurchaseCoreData, StripeStoreData, Environment} from '../../../index';
 
 const testHeaders: RequestHeaders = {a: 'a'};
 const headerBuilder: HeaderBuilder = {
@@ -82,7 +83,9 @@ describe('RequestConfigurator tests', () => {
     // given
     const properties = [{key: 'a', value: 'a'}, {key: 'b', value: 'b'}];
     const expResult: NetworkRequest = {
-      headers: testHeaders,
+      // The User-Id header must match the addressed user, not the ambient one —
+      // the send may target the previous user during a user-change flush.
+      headers: {...testHeaders, [ApiHeader.UserID]: testUserId},
       type: RequestType.POST,
       url: testBaseUrl + '/' + ApiEndpoint.Users + '/' + encodedTestUserId + '/' + ApiEndpoint.Properties,
       body: properties,
@@ -222,5 +225,74 @@ describe('RequestConfigurator tests', () => {
     // then
     expect(identityRequest.url).toBe(`${testBaseUrl}/${ApiEndpoint.Identity}/${encodeURIComponent(unsafeIdentityId)}`);
     expect(createIdentityRequest.url).toBe(`${testBaseUrl}/${ApiEndpoint.Identity}/${encodeURIComponent(unsafeIdentityId)}`);
+  });
+
+  test('paddle subscription purchase request', () => {
+    // given
+    const data: PurchaseCoreData & PaddleStoreData = {
+      currency: 'USD',
+      price: '9.99',
+      purchased: 1716300000,
+      transactionId: 'txn_01hv4rrk',
+      productId: 'pro_01hv4rrk',
+      subscriptionId: 'sub_01hv4rrk',
+      type: 'subscription',
+    };
+    const expResult: NetworkRequest = {
+      headers: testHeaders,
+      type: RequestType.POST,
+      url: `${testBaseUrl}/${ApiEndpoint.Users}/${encodedTestUserId}/purchases`,
+      body: {
+        price: data.price,
+        currency: data.currency,
+        paddle_store_data: {
+          transaction_id: data.transactionId,
+          product_id: data.productId,
+          type: 'subscription',
+          subscription_id: data.subscriptionId,
+        },
+        purchased: data.purchased,
+      },
+    };
+
+    // when
+    const request = requestConfigurator.configurePaddlePurchaseRequest(testUserId, data);
+
+    // then
+    expect(request).toStrictEqual(expResult);
+  });
+
+  test("paddle inapp purchase request omits subscription_id and maps 'inapp' to wire 'non_recurring'", () => {
+    // given
+    const data: PurchaseCoreData & PaddleStoreData = {
+      currency: 'USD',
+      price: '4.99',
+      purchased: 1716300000,
+      transactionId: 'txn_01hv4rrk',
+      productId: 'pro_01hv4rrk',
+      type: 'inapp',
+    };
+    const expResult: NetworkRequest = {
+      headers: testHeaders,
+      type: RequestType.POST,
+      url: `${testBaseUrl}/${ApiEndpoint.Users}/${encodedTestUserId}/purchases`,
+      body: {
+        price: data.price,
+        currency: data.currency,
+        paddle_store_data: {
+          transaction_id: data.transactionId,
+          product_id: data.productId,
+          // Wire enum: server expects "non_recurring", not "inapp".
+          type: 'non_recurring',
+        },
+        purchased: data.purchased,
+      },
+    };
+
+    // when
+    const request = requestConfigurator.configurePaddlePurchaseRequest(testUserId, data);
+
+    // then
+    expect(request).toStrictEqual(expResult);
   });
 });
