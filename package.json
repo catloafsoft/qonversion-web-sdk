@@ -37,7 +37,7 @@
   "licenseFilename": "LICENSE",
   "readmeFilename": "README.md",
   "devDependencies": {
-    "@babel/core": "^7.29.0",
+    "@babel/core": "^7.29.6",
     "@babel/preset-env": "^7.29.2",
     "@babel/preset-typescript": "^7.28.5",
     "@types/node": "^25.5.0",
@@ -54,6 +54,6 @@
   },
   "dependencies": {
     "@types/uuid": "^11.0.0",
-    "uuid": "^11.1.0"
+    "uuid": "^14.0.0"
   }
 }
